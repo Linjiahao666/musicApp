@@ -1,0 +1,76 @@
+project: musicApp
+source: https://github.com/Linjiahao666/musicApp/issues/15
+updated_at: "2026-09-16"
+phases:
+  - id: phase-01
+    name: Flutter 双端空壳能启动
+    status: completed
+    started_at: "2026-09-16T22:30:00+08:00"
+    completed_at: "2026-09-16T22:45:00+08:00"
+    depends_on: []
+  - id: phase-02
+    name: 注册登录与会话保持
+    status: completed
+    started_at: "2026-09-16T22:45:00+08:00"
+    completed_at: "2026-09-16T23:00:00+08:00"
+    depends_on: [phase-01]
+  - id: phase-03
+    name: 导入一首音频后能在歌曲列表点播
+    status: completed
+    started_at: "2026-09-16T23:00:00+08:00"
+    completed_at: "2026-09-16T23:20:00+08:00"
+    depends_on: [phase-01]
+  - id: phase-04
+    name: 专辑与歌手浏览、列表内过滤
+    status: completed
+    started_at: "2026-09-16T23:20:00+08:00"
+    completed_at: "2026-09-16T23:35:00+08:00"
+    depends_on: [phase-03]
+  - id: phase-05
+    name: Queue 点播、插播与循环模式
+    status: completed
+    started_at: "2026-09-16T23:35:00+08:00"
+    completed_at: "2026-09-16T23:50:00+08:00"
+    depends_on: [phase-03]
+  - id: phase-06
+    name: 标签、Cover、Lyrics、文件夹导入与去重
+    status: completed
+    started_at: "2026-09-16T23:50:00+08:00"
+    completed_at: "2026-09-17T00:10:00+08:00"
+    depends_on: [phase-03]
+  - id: phase-07
+    name: 改元数据与删除 Song
+    status: completed
+    started_at: "2026-09-17T00:10:00+08:00"
+    completed_at: "2026-09-17T00:25:00+08:00"
+    depends_on: [phase-03]
+  - id: phase-08
+    name: Favorites 加入与移出
+    status: completed
+    started_at: "2026-09-17T00:25:00+08:00"
+    completed_at: "2026-09-17T00:40:00+08:00"
+    depends_on: [phase-03]
+  - id: phase-09
+    name: dirty 资源与 Manifest 上传
+    status: completed
+    started_at: "2026-09-17T00:40:00+08:00"
+    completed_at: "2026-09-17T01:00:00+08:00"
+    depends_on: [phase-02, phase-06, phase-08]
+  - id: phase-10
+    name: 拉取 Manifest 与 LWW 合并
+    status: completed
+    started_at: "2026-09-17T01:00:00+08:00"
+    completed_at: "2026-09-17T01:20:00+08:00"
+    depends_on: [phase-07, phase-09]
+  - id: phase-11
+    name: 云端 Range 播放、缓存 LRU 与固定下载
+    status: completed
+    started_at: "2026-09-17T01:20:00+08:00"
+    completed_at: "2026-09-17T01:40:00+08:00"
+    depends_on: [phase-05, phase-09]
+  - id: phase-12
+    name: Android 通知栏播控
+    status: completed
+    started_at: "2026-09-17T01:40:00+08:00"
+    completed_at: "2026-09-17T01:55:00+08:00"
+    depends_on: [phase-05]
