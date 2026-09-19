@@ -13,11 +13,16 @@ import 'package:music_app/models.dart';
 import 'package:music_app/ports.dart';
 import 'package:path_provider/path_provider.dart';
 
+const String storeBaseUrl = String.fromEnvironment(
+  'STORE_BASE_URL',
+  defaultValue: 'http://localhost:8080',
+);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final Directory supportDir = await getApplicationSupportDirectory();
   final LibrarySession session = LibrarySession(
-    storeFiles: HttpStoreFiles(),
+    storeFiles: HttpStoreFiles(baseUrl: storeBaseUrl),
     localDisk: FileLocalDisk(supportDir),
     audioEngine: JustAudioEngine(),
   );
@@ -168,6 +173,11 @@ class _AuthPageState extends State<_AuthPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            Text(
+              storeBaseUrl,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
             TextField(
               controller: _username,
               enabled: !_busy,
