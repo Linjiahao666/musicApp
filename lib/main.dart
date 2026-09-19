@@ -588,6 +588,14 @@ class _LibraryHomeState extends State<_LibraryHome> {
       ),
       body: Column(
         children: <Widget>[
+          if (session.syncError != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Text(
+                '同步失败，曲库尚未上云',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
           if (_atRoot) _PaneBar(pane: _pane, onSelect: _selectPane),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),

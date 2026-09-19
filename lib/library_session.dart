@@ -111,6 +111,7 @@ final class LibrarySession {
   bool _manifestDirty = false;
   int _cacheLimitBytes = defaultAudioCacheLimitBytes;
   int _cacheClock = 0;
+  Object? _syncError;
 
   LibraryProjection get library {
     return LibraryProjection(
@@ -154,6 +155,9 @@ final class LibrarySession {
 
   /// 当前有效 Manifest 在 server 上的 file_id。
   String? get manifestFileId => _manifestFileId;
+
+  /// 最近一次同步失败。成功后为空。
+  Object? get syncError => _syncError;
 
   /// 音频缓存上限，单位字节。Cover 不计入用量。
   int get cacheLimitBytes => _cacheLimitBytes;
@@ -489,6 +493,7 @@ final class LibrarySession {
   Future<void> _forget() async {
     _tokens = null;
     _currentUser = null;
+    _syncError = null;
     await localDisk.clearAuthTokens();
   }
 
@@ -544,27 +549,23 @@ final class LibrarySession {
   }
 
   Future<(LibrarySnapshot, String?)> _loadRemoteManifest(String accessToken) async {
-    try {
-      final List<StoreFile> items = await storeFiles.listFiles(
-        accessToken: accessToken,
-        filename: manifestFilename,
-        limit: 1,
-      );
-      if (items.isEmpty) {
-        return (LibrarySnapshot(), null);
-      }
-      final List<int> bytes = await storeFiles.downloadFile(
-        accessToken: accessToken,
-        fileId: items.first.id,
-      );
-      final Object? decoded = jsonDecode(utf8.decode(bytes));
-      if (decoded is! Map<String, dynamic>) {
-        return (LibrarySnapshot(), null);
-      }
-      return (LibrarySnapshot.fromJson(decoded), items.first.id);
-    } catch (_) {
+    final List<StoreFile> items = await storeFiles.listFiles(
+      accessToken: accessToken,
+      filename: manifestFilename,
+      limit: 1,
+    );
+    if (items.isEmpty) {
       return (LibrarySnapshot(), null);
     }
+    final List<int> bytes = await storeFiles.downloadFile(
+      accessToken: accessToken,
+      fileId: items.first.id,
+    );
+    final Object? decoded = jsonDecode(utf8.decode(bytes));
+    if (decoded is! Map<String, dynamic>) {
+      return (LibrarySnapshot(), null);
+    }
+    return (LibrarySnapshot.fromJson(decoded), items.first.id);
   }
 
   Future<void> _deletePendingBlobs(String accessToken) async {
@@ -616,7 +617,9 @@ final class LibrarySession {
   Future<void> _trySync() async {
     try {
       await sync();
-    } catch (_) {
+      _syncError = null;
+    } catch (error) {
+      _syncError = error;
       // 后台同步失败不影响本机会话。
     }
   }

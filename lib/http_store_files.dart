@@ -112,9 +112,6 @@ final class HttpStoreFiles implements StoreFiles {
       }),
       headers: _headers(accessToken: accessToken, hasBody: false),
     );
-    if (response.statusCode == 404) {
-      return const <StoreFile>[];
-    }
     final Map<String, dynamic> json = _decodeSuccess(response);
     final Object? items = json['items'];
     if (items is! List) {

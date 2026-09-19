@@ -11,6 +11,7 @@ final class FakeStoreFiles implements StoreFiles {
 
   final Duration accessTtl;
   bool failRefresh = false;
+  bool failListFiles = false;
   int refreshCount = 0;
 
   final Map<String, String> _passwords = <String, String>{};
@@ -150,6 +151,9 @@ final class FakeStoreFiles implements StoreFiles {
     int limit = 1,
   }) async {
     _requireAccess(accessToken);
+    if (failListFiles) {
+      throw const AuthException(code: 'STORE_REQUEST_FAILED', message: '请求失败');
+    }
     final List<FakeUploadedFile> matched = <FakeUploadedFile>[
       for (final FakeUploadedFile file in uploads.reversed)
         if (file.filename == filename && !deletedFileIds.contains(file.id)) file,

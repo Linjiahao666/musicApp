@@ -198,6 +198,88 @@ void main() {
     expect(session.library.artists, isEmpty);
     expect(session.library.albums, isEmpty);
     expect(session.manifestFileId, isNull);
+    expect(session.syncError, isNull);
+  });
+
+  test('远端 items 为空时本机 dirty 仍上传', () async {
+    final FakeStoreFiles storeFiles = FakeStoreFiles();
+    final FakeLocalDisk localDisk = FakeLocalDisk();
+    localDisk.fileBytes['/music/a.mp3'] = Uint8List.fromList(<int>[1, 2, 3]);
+    final LibrarySession session = _session(storeFiles, localDisk);
+    await session.importFile('/music/a.mp3');
+    expect(storeFiles.uploads, isEmpty);
+
+    await session.login(username: 'alice', password: 'password1');
+
+    expect(session.library.songs, isNotEmpty);
+    expect(session.syncError, isNull);
+    expect(
+      storeFiles.uploads.where((FakeUploadedFile file) => file.filename == manifestFilename),
+      isNotEmpty,
+    );
+    expect(session.library.songs.single.audioFileId, isNotNull);
+  });
+
+  test('listFiles 抛错时本机 Song 与 Favorites 保持且不上传 Manifest', () async {
+    final FakeStoreFiles storeFiles = FakeStoreFiles();
+    final FakeLocalDisk localDisk = FakeLocalDisk();
+    localDisk.fileBytes['/music/a.mp3'] = Uint8List.fromList(<int>[1, 2, 3]);
+    final LibrarySession session = _session(storeFiles, localDisk);
+    await session.importFile('/music/a.mp3');
+    await session.addToFavorites(session.library.songs.single);
+    final String songId = session.library.songs.single.id;
+    final List<String> favoriteIds = session.favorites.songIds;
+    storeFiles.failListFiles = true;
+
+    await session.login(username: 'alice', password: 'password1');
+
+    expect(session.library.songs.single.id, songId);
+    expect(session.library.artists, isNotEmpty);
+    expect(session.library.albums, isNotEmpty);
+    expect(session.favorites.songIds, favoriteIds);
+    expect(
+      storeFiles.uploads.where((FakeUploadedFile file) => file.filename == manifestFilename),
+      isEmpty,
+    );
+  });
+
+  test('登录成功但发现失败时会话保持且失败可观察', () async {
+    final FakeStoreFiles storeFiles = FakeStoreFiles()..failListFiles = true;
+    final LibrarySession session = _session(storeFiles, FakeLocalDisk());
+
+    await session.login(username: 'alice', password: 'password1');
+
+    expect(session.currentUser?.username, 'alice');
+    expect(session.syncError, isNotNull);
+  });
+
+  test('restoreSession 遇到发现失败时保留凭证与曲库', () async {
+    final FakeStoreFiles storeFiles = FakeStoreFiles();
+    final FakeLocalDisk localDisk = FakeLocalDisk();
+    localDisk.fileBytes['/music/a.mp3'] = Uint8List.fromList(<int>[1, 2, 3]);
+    final LibrarySession first = _session(storeFiles, localDisk);
+    await first.login(username: 'alice', password: 'password1');
+    await first.importFile('/music/a.mp3');
+    await first.addToFavorites(first.library.songs.single);
+    final String songId = first.library.songs.single.id;
+    final List<String> favoriteIds = first.favorites.songIds;
+    final int manifests = storeFiles.uploads
+        .where((FakeUploadedFile file) => file.filename == manifestFilename)
+        .length;
+    storeFiles.failListFiles = true;
+
+    final LibrarySession restored = _session(storeFiles, localDisk);
+    await restored.restoreSession();
+
+    expect(restored.currentUser?.username, 'alice');
+    expect(localDisk.storedTokens, isNotNull);
+    expect(restored.library.songs.single.id, songId);
+    expect(restored.favorites.songIds, favoriteIds);
+    expect(restored.syncError, isNotNull);
+    expect(
+      storeFiles.uploads.where((FakeUploadedFile file) => file.filename == manifestFilename).length,
+      manifests,
+    );
   });
 
   test('发现最新一份 library-manifest.json 并物化曲库', () async {
