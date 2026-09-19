@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:music_app/library_session.dart';
 import 'package:music_app/models.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 /// 启动 Android 媒体通知，四键接到 LibrarySession。
 Future<void> startAndroidPlayback(LibrarySession session) async {
@@ -18,12 +21,13 @@ Future<void> startAndroidPlayback(LibrarySession session) async {
 final class _AndroidPlaybackHandler extends BaseAudioHandler with SeekHandler {
   _AndroidPlaybackHandler(this._session) {
     _session.playbackChanged.listen((_) {
-      _publish();
+      unawaited(_publish());
     });
   }
 
   final LibrarySession _session;
   bool _active = false;
+  Future<PermissionStatus>? _notificationPermission;
 
   @override
   Future<void> play() => _session.play();
@@ -40,7 +44,7 @@ final class _AndroidPlaybackHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> seek(Duration position) => _session.seek(position);
 
-  void _publish() {
+  Future<void> _publish() async {
     final Song? song = _session.currentSong;
     if (song == null) {
       _active = false;
@@ -58,6 +62,7 @@ final class _AndroidPlaybackHandler extends BaseAudioHandler with SeekHandler {
       return;
     }
     _active = true;
+    await _requestNotificationPermissionOnce();
     mediaItem.add(_item(song));
     playbackState.add(
       PlaybackState(
@@ -74,6 +79,11 @@ final class _AndroidPlaybackHandler extends BaseAudioHandler with SeekHandler {
         queueIndex: _session.queueIndex,
       ),
     );
+  }
+
+  /// 首次需要媒体通知时向系统请求通知权限。
+  Future<void> _requestNotificationPermissionOnce() async {
+    await (_notificationPermission ??= Permission.notification.request());
   }
 
   MediaItem _item(Song song) {
