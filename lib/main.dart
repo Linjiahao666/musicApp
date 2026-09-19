@@ -12,6 +12,7 @@ import 'package:music_app/library_session.dart';
 import 'package:music_app/models.dart';
 import 'package:music_app/ports.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 const String storeBaseUrl = String.fromEnvironment(
   'STORE_BASE_URL',
@@ -58,16 +59,30 @@ class _SessionGate extends StatefulWidget {
 class _SessionGateState extends State<_SessionGate> {
   bool _ready = false;
   StreamSubscription<void>? _playbackSub;
+  bool _askedNotification = false;
 
   @override
   void initState() {
     super.initState();
     _playbackSub = widget.session.playbackChanged.listen((_) {
+      unawaited(_askNotificationOnce());
       if (mounted) {
         setState(() {});
       }
     });
     _restore();
+  }
+
+  /// 首次需要媒体通知时向系统请求通知权限。
+  Future<void> _askNotificationOnce() async {
+    if (!Platform.isAndroid || _askedNotification) {
+      return;
+    }
+    if (widget.session.currentSong == null) {
+      return;
+    }
+    _askedNotification = true;
+    await Permission.notification.request();
   }
 
   @override

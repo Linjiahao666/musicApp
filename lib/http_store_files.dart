@@ -115,7 +115,7 @@ final class HttpStoreFiles implements StoreFiles {
     final Map<String, dynamic> json = _decodeSuccess(response);
     final Object? items = json['items'];
     if (items is! List) {
-      return const <StoreFile>[];
+      throw const FormatException('items 不是列表');
     }
     return <StoreFile>[
       for (final Object? item in items)

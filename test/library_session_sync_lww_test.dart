@@ -220,6 +220,55 @@ void main() {
     expect(session.library.songs.single.audioFileId, isNotNull);
   });
 
+  test('Manifest 不是 JSON 对象时本机曲库保持且不上传', () async {
+    final FakeStoreFiles storeFiles = FakeStoreFiles();
+    final FakeLocalDisk localDisk = FakeLocalDisk();
+    localDisk.fileBytes['/music/a.mp3'] = Uint8List.fromList(<int>[1, 2, 3]);
+    final LibrarySession session = _session(storeFiles, localDisk);
+    await session.importFile('/music/a.mp3');
+    await session.addToFavorites(session.library.songs.single);
+    final String songId = session.library.songs.single.id;
+    final List<String> favoriteIds = session.favorites.songIds;
+    final AuthTokens tokens = await storeFiles.login(
+      username: 'alice',
+      password: 'password1',
+    );
+    await storeFiles.uploadFile(
+      accessToken: tokens.accessToken,
+      filename: manifestFilename,
+      contentType: 'application/json',
+      bytes: utf8.encode('[]'),
+    );
+    final int manifests = storeFiles.uploads
+        .where((FakeUploadedFile file) => file.filename == manifestFilename)
+        .length;
+
+    await session.login(username: 'alice', password: 'password1');
+
+    expect(session.library.songs.single.id, songId);
+    expect(session.library.artists, isNotEmpty);
+    expect(session.library.albums, isNotEmpty);
+    expect(session.favorites.songIds, favoriteIds);
+    expect(session.syncError, isNotNull);
+    expect(
+      storeFiles.uploads.where((FakeUploadedFile file) => file.filename == manifestFilename).length,
+      manifests,
+    );
+
+    final LibrarySession restored = _session(storeFiles, localDisk);
+    await restored.restoreSession();
+
+    expect(restored.library.songs.single.id, songId);
+    expect(restored.library.artists, isNotEmpty);
+    expect(restored.library.albums, isNotEmpty);
+    expect(restored.favorites.songIds, favoriteIds);
+    expect(restored.syncError, isNotNull);
+    expect(
+      storeFiles.uploads.where((FakeUploadedFile file) => file.filename == manifestFilename).length,
+      manifests,
+    );
+  });
+
   test('listFiles 抛错时本机 Song 与 Favorites 保持且不上传 Manifest', () async {
     final FakeStoreFiles storeFiles = FakeStoreFiles();
     final FakeLocalDisk localDisk = FakeLocalDisk();

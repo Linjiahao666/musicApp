@@ -563,7 +563,7 @@ final class LibrarySession {
     );
     final Object? decoded = jsonDecode(utf8.decode(bytes));
     if (decoded is! Map<String, dynamic>) {
-      return (LibrarySnapshot(), null);
+      throw const FormatException('Manifest 不是 JSON 对象');
     }
     return (LibrarySnapshot.fromJson(decoded), items.first.id);
   }
